@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Creative Menu | Video Editor Portfolio</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #080808;
+            --accent-gold: #E63946;
+            --text-light: #F4F4F5;
+            --text-muted: #A1A1AA;
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Hide default cursor on desktop when modal is closed */
+        @media (pointer: fine) {
+            body:not(.lightbox-open) * {
+                cursor: none !important;
+            }
+        }
+
+        /* --- Noise Grain Texture --- */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-gold);
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--accent-gold);
+            transition: width 0.2s ease, height 0.2s ease, background-color 0.2s ease, opacity 0.3s ease;
+        }
+
+        .cursor-hover {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(201, 76, 76, 0.1);
+        }
+
+        /* Hide custom cursor on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+
+            .cursor-dot,
+            .cursor-outline {
+                display: none !important;
+            }
+        }
+
+        /* --- Header --- */
+        header {
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-style: italic;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 400;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            color: var(--accent-gold);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s ease 0.2s forwards;
+        }
+
+        .divider {
+            width: 0;
+            height: 1px;
+            background-color: var(--accent-gold);
+            margin: 1.5rem auto;
+            opacity: 0.6;
+            animation: expandLine 1.2s cubic-bezier(0.8, 0, 0.2, 1) 0.6s forwards;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: var(--text-light);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 300;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 1s ease 0.8s forwards;
+        }
+
+        /* --- Main Layout --- */
+        main {
+            padding: 2rem 5% 6rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .category-section {
+            margin-bottom: 6rem;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .category-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1rem;
+        }
+
+        .category-num {
+            color: var(--accent-gold);
+            font-family: var(--font-serif);
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+
+        .category-title {
+            font-family: var(--font-sans);
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* --- Video Cards Grid --- */
+        .video-grid {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 2rem;
+            padding-top: 1rem;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .video-grid::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari */
+        }
+
+        .video-card {
+            flex: 0 0 calc(80vw - 2rem);
+            scroll-snap-align: center;
+            aspect-ratio: 9/16;
+            background-color: #111;
+            border: 1px solid rgba(201, 76, 76, 0.15);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        /* Desktop Grid */
+        @media (min-width: 768px) {
+            .video-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                overflow-x: visible;
+                padding-bottom: 0;
+            }
+
+            .video-card {
+                flex: auto;
+            }
+        }
+
+        .video-card:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(201, 76, 76, 0.15);
+        }
+
+        .thumbnail-inner {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: var(--transition-smooth);
+        }
+
+        .video-card:hover .thumbnail-inner {
+            transform: scale(1.03);
+        }
+
+        .play-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--accent-gold);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent-gold);
+            backdrop-filter: blur(4px);
+            transition: var(--transition-smooth);
+            z-index: 2;
+        }
+
+        .play-btn svg {
+            width: 24px;
+            height: 24px;
+            margin-left: 4px;
+            /* visually center play icon */
+            fill: currentColor;
+        }
+
+        .video-card:hover .play-btn {
+            background: var(--accent-gold);
+            color: var(--bg-color);
+            transform: scale(1.1);
+        }
+
+        .placeholder-text {
+            position: absolute;
+            bottom: 24px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 1;
+        }
+
+        /* --- Modal Lightbox --- */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(8, 8, 8, 0.96);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            color: var(--text-muted);
+            font-size: 2.5rem;
+            background: none;
+            border: none;
+            transition: color 0.3s ease;
+            z-index: 10001;
+            font-family: sans-serif;
+            line-height: 1;
+        }
+
+        .lightbox-close:hover {
+            color: var(--accent-gold);
+            transform: scale(1.1);
+        }
+
+        .iframe-container {
+            width: 100%;
+            max-width: 420px;
+            height: 85vh;
+            max-height: 800px;
+            position: relative;
+            transform: translateY(40px) scale(0.95);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .lightbox.active .iframe-container {
+            transform: translateY(0) scale(1);
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            /* IG needs white background underneath usually */
+        }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            padding: 4rem 1rem;
+            border-top: 1px solid rgba(201, 76, 76, 0.1);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* --- Keyframes --- */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes expandLine {
+            from {
+                width: 0;
+            }
+
+            to {
+                width: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Texture layer -->
+    <div class="noise-overlay"></div>
+
+    <!-- Custom Cursor elements -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <header>
+        <h1>The Creative Menu</h1>
+        <div class="divider"></div>
+        <p class="tagline">Crafted frames. Intentional edits.</p>
+    </header>
+
+    <main>
+        <!-- CATEGORY 1: Speed Ramps -->
+        <section class="category-section">
+            <div class="category-header">
+                <span class="category-num">01</span>
+                <h2 class="category-title">⚡ Speed Ramps — Our Special</h2>
+            </div>
+            <div class="video-grid">
+                <!-- SLOT 1.1 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939856/Video-582_ixamhl.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 1.2 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939856/Video-364_fzotop.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 1.3 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939858/Video-530_ydcrou.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 1.4 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939861/Video-229_cfy23l.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+            </div>
+        </section>
+
+        <!-- CATEGORY 2: Talking Head -->
+        <section class="category-section">
+            <div class="category-header">
+                <span class="category-num">02</span>
+                <h2 class="category-title">🎙️ Talking Head</h2>
+            </div>
+            <div class="video-grid">
+                <!-- SLOT 2.1 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939833/Video-247_i8ghnr.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 2.2 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939835/Video-383_i4oc1r.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 2.3 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939838/Video-316_nysdrh.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 2.4 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939839/Video-213_kexira.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+            </div>
+        </section>
+
+        <!-- CATEGORY 4: AI Videos -->
+        <section class="category-section">
+            <div class="category-header">
+                <span class="category-num">04</span>
+                <h2 class="category-title">🤖 AI Videos</h2>
+            </div>
+            <div class="video-grid">
+                <!-- SLOT 4.1 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939867/Video-670_cjggde.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 4.2 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939898/06_-_Fat_Burner_Cartoon_V3_gecnwm.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 4.3 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775939908/Video_4_-_Reel_7_mukhi_rudraksha_V2_pxmwtb.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+
+                <!-- SLOT 4.4 -->
+                <div class="video-card">
+                    <video src="https://res.cloudinary.com/dasnm53qj/video/upload/v1775940620/ai_3_k4iuxu.mp4" controls playsinline loop style="width:100%; border-radius:12px;"></video>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© The Creative Menu — All edits by Team devgrove.media</p>
+    </footer>
+
+    <!-- Video Modal Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" aria-label="Close modal">×</button>
+        <div class="iframe-container" id="iframe-container">
+            <!-- Iframe injected here dynamically -->
+        </div>
+    </div>
+
+    <!-- Interactions and Animations Script -->
+    <script>
+        // Custom Custom Logic
+        const customDot = document.querySelector('.cursor-dot');
+        const customOutline = document.querySelector('.cursor-outline');
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let outlineX = 0;
+        let outlineY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Instantly move the inner dot
+            customDot.style.left = `${mouseX}px`;
+            customDot.style.top = `${mouseY}px`;
+        });
+
+        // Smooth animation for the outline using requestAnimationFrame
+        function animateCursor() {
+            // Easing factor (0.1 = slower, 0.9 = faster)
+            let easing = 0.2;
+            outlineX += (mouseX - outlineX) * easing;
+            outlineY += (mouseY - outlineY) * easing;
+
+            customOutline.style.left = `${outlineX}px`;
+            customOutline.style.top = `${outlineY}px`;
+
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // Hover effect scaling for interactive elements
+        const interactives = document.querySelectorAll('button, .video-card');
+        interactives.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                customOutline.classList.add('cursor-hover');
+            });
+            el.addEventListener('mouseleave', () => {
+                customOutline.classList.remove('cursor-hover');
+            });
+        });
+
+        // Scroll Reveal Animation via IntersectionObserver
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: "0px 0px -50px 0px"
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target); // Animate only once
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.category-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Modal / Lightbox Logic
+        const lightbox = document.getElementById('lightbox');
+        const iframeContainer = document.getElementById('iframe-container');
+        const closeBtn = document.querySelector('.lightbox-close');
+
+        // Open lightbox
+        document.querySelectorAll('.video-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const url = card.getAttribute('data-embed-url');
+                if (url) {
+                    // Inject iframe snippet
+                    iframeContainer.innerHTML = `<iframe src="${url}" allowtransparency="true" frameborder="0" scrolling="no" allowfullscreen></iframe>`;
+                    lightbox.classList.add('active');
+
+                    // Add class to body to restore standard cursor so iframe can be interacted with
+                    document.body.classList.add('lightbox-open');
+
+                    // Fade out custom cursor graphic
+                    customDot.style.opacity = '0';
+                    customOutline.style.opacity = '0';
+                }
+            });
+        });
+
+        // Close lightbox
+        const closeLightbox = () => {
+            lightbox.classList.remove('active');
+
+            // Delay removing iframe src to allow for fade-out animation to finish natively
+            setTimeout(() => {
+                iframeContainer.innerHTML = '';
+            }, 400);
+
+            // Restore custom cursor
+            document.body.classList.remove('lightbox-open');
+            customDot.style.opacity = '1';
+            customOutline.style.opacity = '1';
+        };
+
+        // Close via Button
+        closeBtn.addEventListener('click', closeLightbox);
+
+        // Close via clicking background
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        // Close via Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                closeLightbox();
+            }
+        });
+    </script>
+</body>
+
+</html>
